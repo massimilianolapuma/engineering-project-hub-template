@@ -60,6 +60,12 @@ organizzazione GitHub (o all'identity provider aziendale).
 
 ### 4. GitHub App (raccolta in sola lettura)
 
+> **Con un clic:** apri la [pagina di configurazione della GitHub App](https://massimilianolapuma.github.io/engineering-project-hub/it/setup/github-app/), inserisci la
+> tua organizzazione e questa repository, conferma su GitHub, poi esegui i comandi `gh` che la
+> pagina mostra: salvano qui `GH_APP_ID` e `GH_APP_PRIVATE_KEY`. La chiave privata va da GitHub
+> solo al tuo terminale. Poi installa l'App (sotto) e aggiungi `GH_APP_INSTALLATION_ID`. Per
+> farlo a mano:
+
 Crea una GitHub App nella tua organizzazione (Settings → Developer settings → GitHub Apps → New),
 webhook **spento**, "Only on this account", con permessi di repository **in sola lettura**:
 

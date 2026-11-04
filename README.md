@@ -58,6 +58,11 @@ organisation (or your company identity provider).
 
 ### 4. GitHub App (read-only collector)
 
+> **One click:** open the [GitHub App setup page](https://massimilianolapuma.github.io/engineering-project-hub/setup/github-app/), enter your organisation and this
+> repository, confirm on GitHub, then run the `gh` commands the page prints: they store
+> `GH_APP_ID` and `GH_APP_PRIVATE_KEY` here. The private key goes from GitHub to your terminal
+> only. Then install the App (below) and add `GH_APP_INSTALLATION_ID`. To do it by hand:
+
 Create a GitHub App in your organisation (Settings → Developer settings → GitHub Apps → New),
 webhook **off**, "Only on this account", with **read-only** repository permissions:
 
