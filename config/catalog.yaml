@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/massimilianolapuma/engineering-project-hub/v0.17.0/config/schema/catalog-settings.schema.json
+#
+# Engineering Project Hub — catalog settings.
+# Projects live in config/projects/<id>.yaml (one file each). Discovery scans the owners below
+# and proposes projects in the catalog editor; nothing is added until a project file is saved.
+# Reference: https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/configuration.md (EN) · https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/it/configuration.md (IT)
+
+discovery:
+  enabled: true
+  owners: [your-org] # REPLACE: the GitHub organisation(s) or user(s) to scan
+  includePrivate: true # allowed: publication.audience is "restricted" (config/policies.yaml)
+  includeForks: false
+  includeArchived: false
+  maxRepositories: 200
+
+# GitHub teams filter the Portfolio (?team=<slug>). Team discovery needs the organisation
+# permission Members: read on the GitHub App; leave it off until you grant it.
+teams:
+  discovery: false

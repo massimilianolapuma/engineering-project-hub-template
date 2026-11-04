@@ -1,0 +1,50 @@
+# Validates config/ with the pinned hub release on every pull request (for example the ones the
+# catalog editor opens) and on pushes to main. No secrets, no write permission.
+
+name: Validate configuration
+
+on:
+  pull_request:
+    paths: ['config/**', '.github/workflows/**']
+  push:
+    branches: [main]
+    paths: ['config/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate config/
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: deploy
+          persist-credentials: false
+
+      - name: Checkout hub (pinned release)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: massimilianolapuma/engineering-project-hub
+          ref: 788257f30d0f59f31305a7c35f607480b1a0665e # v0.17.0 hub release
+          path: hub
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: hub/package-lock.json
+
+      - name: Install dependencies
+        working-directory: hub
+        run: npm ci
+
+      - name: Validate
+        working-directory: hub
+        run: npx tsx scripts/validate-config.ts ../deploy/config

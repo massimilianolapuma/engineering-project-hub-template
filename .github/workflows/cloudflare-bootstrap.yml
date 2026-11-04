@@ -1,0 +1,37 @@
+# One-off, manual: checks the Cloudflare API token (Account → Cloudflare Pages → Edit)
+# and creates the Pages project (Direct Upload, production branch main) if missing.
+# Idempotent: safe to re-run.
+
+name: Cloudflare bootstrap (manual)
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  bootstrap:
+    name: Check token and create Pages project
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    permissions: {}
+    steps:
+      # [template-injection] vars mapped to env and validated before use.
+      - name: Create Pages project if missing
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: |
+          [[ "$CF_PROJECT" =~ ^[a-z0-9][a-z0-9-]{0,57}$ ]] || { echo "::error::invalid CLOUDFLARE_PAGES_PROJECT"; exit 1; }
+          [[ "$CLOUDFLARE_ACCOUNT_ID" =~ ^[0-9a-f]{32}$ ]] || { echo "::error::invalid CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+          [[ -n "$CLOUDFLARE_API_TOKEN" ]] || { echo "::error::CLOUDFLARE_API_TOKEN is not set"; exit 1; }
+          wr() { npx --yes wrangler@4.151.0 "$@"; }
+          if wr pages project list | grep -qw -- "$CF_PROJECT"; then
+            echo "Pages project $CF_PROJECT already exists"
+          else
+            wr pages project create "$CF_PROJECT" --production-branch main
+          fi
+          wr pages project list

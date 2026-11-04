@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/massimilianolapuma/engineering-project-hub/v0.17.0/config/schema/project.schema.json
+#
+# Engineering Project Hub — one project. REPLACE this example with your own projects, or delete
+# it and add projects from the catalog editor of your site (it proposes a pull request here).
+# Reference: https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/configuration.md (EN) · https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/it/configuration.md (IT)
+
+id: example-service
+name: Example service
+description: A single-repository service. Replace with a real project.
+businessUnit: Engineering
+lifecycle: development
+
+coordinator:
+  repository: your-org/example-service # REPLACE: owner/repo
+
+environments:
+  - id: dev
+    name: DEV
+  # The delivery checks of the control map read the deploys of this environment.
+  # GitHub Actions jobs with `environment: prod` already record them; for deploys made outside
+  # GitHub see https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/deployments-ledger.md
+  - id: prod
+    name: PROD
+    deploySignal: { type: github-deployments, repository: coordinator }
+
+trackedWorkflows:
+  - id: ci
+    name: Continuous Integration
+    file: ci.yml # REPLACE: a workflow file of the repository
+    critical: true
+
+securityControls:
+  codeScanning: { required: true }
+  secretScanning: { required: true }
+  dependabot: { required: true }
+  containerScanning: { required: false }
+  iacScanning: { required: false }
+  dast: { required: false }
+  sbom: { required: false }
+  artifactSignature: { required: false }

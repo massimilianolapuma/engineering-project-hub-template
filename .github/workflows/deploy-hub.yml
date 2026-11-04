@@ -1,0 +1,42 @@
+# Deploys your Engineering Project Hub: collect (GitHub App, read-only) → build (no secrets)
+# → Cloudflare Pages (behind Cloudflare Access). Runs the public hub code at a pinned release.
+# Setup: README.md of this repository. Upgrade: ./scripts/upgrade-hub.sh vX.Y.Z
+
+name: Deploy — Engineering Project Hub (protected)
+
+on:
+  workflow_dispatch:
+  # Enable after the first successful manual run (README, step 7):
+  # schedule:
+  #   - cron: '17 */6 * * *'
+  # push:
+  #   branches: [main]
+  #   paths: ['config/**', '.github/workflows/deploy-hub.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-hub
+  cancel-in-progress: false
+
+jobs:
+  hub:
+    permissions:
+      contents: read
+      actions: read # the hub restores this repository's own hub-history artifact (v0.14.2+)
+    uses: massimilianolapuma/engineering-project-hub/.github/workflows/rw-hub-cloudflare-deploy.yml@788257f30d0f59f31305a7c35f607480b1a0665e # v0.17.0
+    with:
+      hub-ref: 788257f30d0f59f31305a7c35f607480b1a0665e
+      cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      cloudflare-project: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      site-url: ${{ vars.HUB_SITE_URL }}
+      # Teams notifications (docs/notifications.md): '' (off), 'dry-run', then 'send'.
+      # notifications: ${{ vars.HUB_NOTIFICATIONS }}
+    secrets:
+      GH_APP_ID: ${{ secrets.GH_APP_ID }}
+      GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      GH_APP_INSTALLATION_ID: ${{ secrets.GH_APP_INSTALLATION_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Only the notify job receives it (in its Notify step).
+      # TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}

@@ -1,0 +1,170 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/massimilianolapuma/engineering-project-hub/v0.17.0/config/schema/policies.schema.json
+#
+# Engineering Project Hub — health policies.
+# These are the hub's default policies, NOT universal risk assessments.
+# Change them here: no code or frontend change is needed.
+# Reference: https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/configuration.md (EN) · https://github.com/massimilianolapuma/engineering-project-hub/blob/main/docs/it/configuration.md (IT)
+
+schemaVersion: '1.0'
+
+freshness:
+  snapshotStaleHours: 24 # the site flags the whole snapshot as stale after this
+  workflowRunStaleDays: 14 # last completed run of a tracked workflow older than this = stale
+  securityScanStaleDays: 7 # last code scanning analysis older than this = stale
+  securityStatusFileStaleDays: 7 # .security/project-security-status.json older than this = stale
+  qualityReportStaleDays: 14 # hub-quality-summary generated longer ago = stale (still counted, caps at amber)
+  # supplyChainSummaryStaleDays: 14 # hub-supply-chain-summary generated longer ago = stale (default 14)
+
+delivery:
+  queuedThresholdMinutes: 60 # queued / in progress for longer = attention
+  missingCriticalWorkflow: amber
+  failedCriticalWorkflow: red
+
+security:
+  redOnSeverities: [critical]
+  amberOnSeverities: [high, medium, low]
+  openSecretAlertIsRed: true
+  requiredControlFailedIsRed: true
+  staleScanIsAmber: true
+  incompleteCoverageIsAmber: true
+
+coverage:
+  greenThresholdPercent: 100
+
+# Quality: line coverage from the CI artifact hub-quality-summary (quality-summary.json).
+# Project coverage = sum covered / sum valid over repositories with a readable or stale report;
+# a component without a visible report never counts as 0%.
+quality:
+  greenThresholdPercent: 80 # at or above = green
+  amberThresholdPercent: 60 # at or above = amber, below = red
+  missingReportIsAmber: true # some applicable component without a visible report → at most amber
+  # sources: [ci-summary, sonarqube] # report sources per component, in order of precedence (default)
+  # qualityGateFailed: info # info | amber: a failed SonarQube quality gate (default info)
+
+# History: a compact record of every collection kept between runs (history.json) and the
+# "what changed" diff (changes.json). Optional: the defaults below apply when omitted.
+# history:
+#   enabled: true # false = no history.json / changes.json; the pages say history is off
+#   maxEntries: 120 # 2–1000; 120 = 30 days at the 6-hour schedule
+#   maxAgeDays: 90 # 1–400; older entries are dropped
+
+version:
+  componentDrift: amber
+  environmentBehind: amber
+  unresolvableSubmodule: red
+  unknownManifestComponent: red
+  unmappedSubmodule: amber
+  untaggedSubmodule: amber # coordinator pins a SHA that is not a release tag
+  manifestSubmoduleMismatch: amber # manifest version ≠ version pinned by the submodule
+  # environmentOutOfSync: info # info | amber | red: Argo CD reports an environment out of sync (default info)
+  # environmentDegraded: info # info | amber | red: Argo CD reports an environment degraded (default info)
+
+# Supply chain evidence: SBOM, signatures and attestations, Trivy / Checkov / ZAP by code-scanning
+# tool name. Every level is informative by default. Optional: the defaults apply when omitted.
+supplyChain:
+  # enabled: true # false = no supply-chain evidence collected
+  sbom:
+    # The SBOM export asks GitHub to run a job (GET .../dependency-graph/sbom/generate-report): the
+    # single exception to "read-only, GET only" (ADR 0011). It is OFF by default and stays off here:
+    # a real collection with this config never requests it (the mock source serves fixture SBOMs
+    # whatever this switch says). Set true only if you accept that exception.
+    dependencyGraph: false
+    # maxBytes: 16777216 · pollAttempts: 3 · pollIntervalSeconds: 5
+    flaggedLicenses: [GPL-3.0-only, AGPL-3.0-only] # demo: informative
+  # attestations: { releaseAssets: true, maxAssets: 5 }
+  # toolControls: # code-scanning tool name (case-insensitive) → control; optional category prefix
+  #   containerScanning: [{ tool: Trivy }]
+  #   iacScanning: [{ tool: Checkov }]
+  #   dast: [{ tool: ZAP }]
+  # levels: { unsignedArtifact: info, flaggedLicense: info } # info | amber | red
+
+governance:
+  missingStandardWorkflow: amber
+  archivedRepository: amber
+  missingSecurityStatusFile: amber
+  defaultBranchMismatch: amber
+
+# Repository controls: six named checks per repository, read from the workflow files and the
+# branch rules API (read-only). Optional: the defaults below apply when omitted. Every check is
+# informative by default: it is shown but never changes Governance until you enforce it.
+# repositoryControls:
+#   enabled: true # false = none of the calls is made; the section says "off"
+#   checks: # info | amber | red
+#     actions-pinned: info # every `uses:` is pinned to a full commit SHA
+#     reusable-workflows-current: info # reusable workflows are at the latest release or tag
+#     branch-protected: info
+#     pull-request-required: info
+#     force-push-blocked: info
+#     status-checks-required: info
+#   unknownEnforcedCheck: info # info | amber: an enforced check that cannot be determined
+#   exemptActionOwners: [] # e.g. [actions, github]: their unpinned actions count as pinned
+#   maxWorkflowFiles: 30 # 1–100 per repository
+#   readClassicProtection: false # true needs Administration: read on the credentials
+
+# Remediation SLAs: calendar days (UTC) from the alert's creation, per class. Optional: the
+# defaults below apply when omitted. An overdue alert is informative unless you escalate it.
+remediation:
+  enabled: true # false = no SLA computed or shown ("not measured")
+  days: # 1–3650 or null (no SLA for that class)
+    critical: 7
+    high: 30
+    medium: 90
+    low: 180
+    secret: 7 # secret scanning alerts, whatever their severity
+  overdue: # info | amber | red: what an overdue alert does to Security
+    critical: red # opt-in: the schema default is info (never red overnight)
+    high: red # opt-in: the schema default is info (never red overnight)
+    medium: info
+    low: info
+    secret: info
+
+# Security exceptions (config/exceptions.yaml): an accepted finding leaves the counts until
+# its exception expires. Optional: the defaults below apply when omitted.
+# exceptions:
+#   maxDays: 180 # 1–366: longest allowed created → expires span
+#   expiringSoonDays: 14 # 0–90: active exceptions expiring within this many days are flagged
+#   expiredIsAmber: true # an expired exception adds an amber Security reason (else info)
+
+overall:
+  criticalDimensions: [delivery, version, security]
+  requiredDimensions: [delivery, version, security, coverage, governance]
+  # Counted like a required non-critical dimension when measured; ignored when grey (it neither
+  # turns the project grey nor lowers the score). Never list a dimension in both lists.
+  # optionalDimensions: [quality] # default
+  greyRequiredDimension: grey
+
+# Project score (0–100), used to rank and compare projects. Optional: the defaults below apply
+# when the block is omitted. Weighted mean of the points of the measured required dimensions
+# (grey = not measured, never counted as 0), capped by the overall status. A dimension grey
+# only because there is nothing to measure (e.g. no critical workflows) is not applicable and
+# leaves both measured and required. Below minMeasuredRatio measured: no number.
+# score:
+#   weights: { delivery: 25, version: 15, security: 30, coverage: 15, governance: 15, quality: 10 }
+#   points: { green: 100, amber: 60, red: 20 }
+#   caps: { red: 49, amber: 89, grey: 89 } # overall red ≤ 49; amber / grey ≤ 89
+#   minMeasuredRatio: 0.5
+
+# Read-only outputs built from the published data (docs/outputs.md). Optional: these are the
+# defaults applied when the block is omitted.
+outputs:
+  metrics:
+    enabled: true # false = no data/metrics/hub.prom (Prometheus text format)
+    maxBytes: 4194304 # 65536–16777216; over the cap the file drops detail, never fails the run
+  executive:
+    enabled: true # false = no executive summary page and no navigation entry
+    topRisks: 5 # 1–10 projects listed under "Top risks"
+    trendDays: 7 # 1–90; age of the comparison column of the trend table
+
+# Control map (docs/control-map.md): technical checks related to DORA and ISO 27001, levels 0-5.
+# Produced only for publication.audience: restricted, or with demo data. Not a compliance
+# assessment. thresholds.<check>: five values for levels 1-5 (default ladders in the docs).
+controlMap:
+  enabled: true
+  windows: { frequencyDays: 30, trendDays: 90 }
+  thresholds: {}
+
+publication:
+  # public: titles and rule ids of findings in private/internal repositories are withheld.
+  # restricted: use only when the site is served behind access control.
+  audience: restricted
+  allowedLinkHosts: [github.com]
